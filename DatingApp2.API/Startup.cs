@@ -13,6 +13,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using DatingApp2.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace DatingApp2.API
 {
@@ -31,6 +34,19 @@ namespace DatingApp2.API
             services.AddDbContext<DataContext>(x => x.UseSqlite
             (Configuration.GetConnectionString("DefaultConnection")));
             services.AddCors();
+            services.AddScoped<IAuthRepository, AuthRepository>();
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options => {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII
+                    .GetBytes(Configuration.GetSection("AppSettings:Token").Value)),
+
+                    ValidateIssuer = false,
+                    ValidateAudience = false
+                };
+            });
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -53,6 +69,7 @@ namespace DatingApp2.API
 
             app.UseRouting();
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            app.UseAuthentication();
 
             app.UseAuthorization();
 
